@@ -256,14 +256,14 @@ class IdfFile(object):
 
     def is_out(self, row, col):
         '''return True if row, col is out of bounds according to header'''
-        return ((col < 0) or (col > self.header['ncol']) or
-               (row < 0) or (row > self.header['nrow']))
+        return ((col < 0) or (col >= self.header['ncol']) or
+               (row < 0) or (row >= self.header['nrow']))
 
     def sample(self, coords, bounds_warning=True):
         '''sample Idf for sequence of X,Y coordinates'''
         self.check_read()
 
-        values = self.read()
+        values = self.read(masked=True).filled(np.nan)
         for x, y in coords:
             col = int((x - self.header['xmin']) / self.header['dx'])
             row = int((self.header['ymax'] - y) / self.header['dy'])
