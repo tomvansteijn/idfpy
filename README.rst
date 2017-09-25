@@ -1,2 +1,3 @@
-# idfpy
-read and write iMOD IDF arrays
+IDFPY
+=====
+read and write iMOD Idf files

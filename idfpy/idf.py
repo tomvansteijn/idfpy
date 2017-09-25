@@ -10,7 +10,7 @@ import struct
 
 
 class IdfFileHeaderFormat(object):
-    '''Static class containing IDF file header definition'''
+    '''Static class containing Idf file header definition'''
     fields = [
     ('lahey', 'i', 4),
     ('ncol', 'i', 4),
@@ -24,45 +24,30 @@ class IdfFileHeaderFormat(object):
     ('nodata', '7', 4),
     ('ieq', '?', 1),
     ('itb', '?', 1),
-    ('mfct' 'x', 2),
+    ('mfct', 'x', 2),
     ]
 
-    @property
-    @staticmethod
-    def names(self):
-        return [n for n, f, l in self.fields]
-
-    @property
-    @staticmethod
-    def format(self):
-        return ''.join(f for n, f, l in self.fields)
-
-    @property
-    @staticmethod
-    def length(self):
-        return sum(l for n, f, l in self.fields)
-
-    @property
-    @staticmethod
-    def multiplication_factors(self):
-        return {
-            1: 1e2,
-            2: 1e-2,
-            3: 1e3,
-            4: 1e-3,
-            5: 1e3,
-            6: 1e-3
-            }
+    names = [n for n, f, l in fields]
+    byteformat = ''.join(f for n, f, l in fields)
+    length = sum(l for n, f, l in fields)
+    multiplication_factors = {
+        1: 1e2,
+        2: 1e-2,
+        3: 1e3,
+        4: 1e-3,
+        5: 1e3,
+        6: 1e-3
+        }
 
 
 class IdfFileMode(Enum):
-    '''IDF file binary read or write mode'''
+    '''Idf file binary read or write mode'''
     rb = 0
     wb = 1
 
 
 class IdfFile(object):
-    '''iMOD IDF file read and write object'''
+    '''iMOD Idf file read and write object'''
     def __init__(self, filepath, mode='rb', header=None):
         # set filepath as property
         self.filepath = filepath
@@ -126,17 +111,17 @@ class IdfFile(object):
         if self.mode != IdfFileMode.rb:
             raise ValueError("cannot read in '{}' mode".format(self.mode.name))
         if self.closed:
-            raise IOError('cannot read closed IDF file')
+            raise IOError('cannot read closed Idf file')
         return True
 
     def read_header(self, is_checked=False):
-        '''read header from IDF file'''
+        '''read header from Idf file'''
         if not is_checked:
             self.check_read()
 
         # read values according to headerformat and save in dict
         header_values = struct.unpack(
-            IdfFileHeaderFormat.format,
+            IdfFileHeaderFormat.byteformat,
             self.f.read(IdfFileHeaderFormat.length,
             ))
         header = {n: v
@@ -144,9 +129,7 @@ class IdfFile(object):
             }
 
         # transform multiplication factors
-        header['mfct'] = (IdfFileHeaderFormat
-            .multiplication_factors.get(ord(header['mfct']), 1)
-            )
+        header['mfct'] = ord(header['mfct'])
 
         # read conditional values from header
         if not header['ieq']:
@@ -168,7 +151,7 @@ class IdfFile(object):
         return header
 
     def read(self, masked=False):
-        '''read values from IDF file and return data as (masked) array'''
+        '''read values from Idf file and return data as (masked) array'''
         is_checked = self.check_read()
         if not self.header:
             self.header = self.read_header(is_checked=is_checked)
@@ -182,7 +165,12 @@ class IdfFile(object):
         values = values.reshape(self.header['nrow'], self.header['ncol'])
 
         # apply multiplication factors if present
-        values *= self.header['mfct']
+        if header['mfct'] > 0:
+            factor = (IdfFileHeaderFormat
+                .multiplication_factors.get(self.header['mfct'], 1)
+                )
+            values *= factor
+
         if self.header['mfct'] > 4:
             if self.header['ieq']:
                 cellsize = self.header['dx'] * self.header['dy']
@@ -207,7 +195,7 @@ class IdfFile(object):
         if self.mode != IdfFileMode.wb:
             raise ValueError("cannot read in '{}' mode".format(self.mode.name))
         if self.closed:
-            raise IOError('cannot write to closed IDF file')
+            raise IOError('cannot write to closed Idf file')
         if not self.header:
             raise ValueError('cannot write when header is empty')
         return True
@@ -218,8 +206,11 @@ class IdfFile(object):
             self.check_write()
 
         # write values according to headerformat
-        header_values = [self.header[k] for k in IdfFileHeaderFormat.names]
-        self.f.write(struct.pack(IdfFileHeaderFormat.format, header_values))
+        header_values = [
+            unichr(self.header[k]) if k == 'mfct' else self.header[k]
+            for k in IdfFileHeaderFormat.names
+            ]
+        self.f.write(struct.pack(IdfFileHeaderFormat.byteformat, header_values))
 
         # write conditional values
         if not self.header['ieq']:
@@ -231,16 +222,24 @@ class IdfFile(object):
         if self.header['ieq']:
             raise NotImplementedError('write method ieq=true not implemented')
 
+    def minmax(self, masked=True):
+        '''get minimum and maximum of Idf data'''
+        masked_data = self.read(masked=masked)
+        return masked_data.min(), masked_data.max()
+
     def write(self, array):
         '''write to header and values to file'''
         is_checked = self.check_write()
+
+        # calculate dmin, dmax and update header
+        self.header['dmin'], self.header['dmax'] = self.minmax()
 
         # write header
         self.write_header(is_checked=is_checked)
 
         # write values
         flattened = array.flatten()
-        self.f.write(struct.pack('f' * len(flattened), *flattened))
+        self.f.write(struct.pack('f'*len(flattened), *flattened))
 
     def is_out(self, row, col):
         '''return True if row, col is out of bounds according to header'''
@@ -248,7 +247,7 @@ class IdfFile(object):
                (row < 0) or (row > self.header['nrow']))
 
     def sample(self, coords, bounds_warning=True):
-        '''sample IDF for sequence of X,Y coordinates'''
+        '''sample Idf for sequence of X,Y coordinates'''
         self.check_read()
 
         values = self.read()
