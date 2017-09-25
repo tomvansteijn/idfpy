@@ -4,7 +4,6 @@
 
 import numpy as np
 
-from enum import Enum
 import logging
 import struct
 
@@ -35,36 +34,19 @@ class IdfFileHeaderFormat(object):
     length = struct.calcsize(byteformat)
 
 
-class IdfFileMode(Enum):
-    '''Idf file binary read or write mode'''
-    rb = 0
-    wb = 1
-
-
 class IdfFile(object):
     '''iMOD Idf file read and write object'''
     def __init__(self, filepath, mode='rb', header=None):
         # set filepath as property
         self.filepath = filepath
 
-        # set other default properties
-        self.closed = True
-        self.nodatavals = []
-
-        # get mode enum and set as property
-        try:
-            self.mode = IdfFileMode[mode]
-        except KeyError:
-            raise ValueError(
-                "mode string must be one of 'rb' or 'wb', not {}".format(mode))
-
         # open filehandle
-        self.open()
+        self.open(mode=mode)
 
         # set header or read from file
         if header is not None:
             self.header = header
-        elif self.mode == IdfFileMode.rb:
+        elif self.mode == 'rb':
             self.header = self.read_header()
         else:
             self.header = {}  # no header, empty dict
@@ -72,7 +54,7 @@ class IdfFile(object):
     def __repr__(self):
         return (
             '{s.__class__.__name__:}(filepath={s.filepath:}, '
-            'mode={s.mode.name:}, closed={s.closed:})').format(
+            'mode={s.mode:}, closed={s.closed:})').format(
             s=self,
             )
 
@@ -88,28 +70,39 @@ class IdfFile(object):
         '''exit with statement block'''
         self.close()
 
-    def open(self):
+    @property
+    def closed(self):
+        return self.f.closed
+
+    @property
+    def mode(self):
+        return self.f.mode
+
+    @property
+    def irec(self):
+        return (10 + (not self.header['ieq']) * 2 + self.header['ieq'] * 2
+            + self.header['itb'] * 2 + 1) * 4
+
+    def open(self, mode='rb'):
         '''open file handle'''
-        self.f = open(self.filepath, self.mode.name)
-        self.closed = False
+        self.f = open(self.filepath, mode)
 
     def close(self):
         '''close file handle'''
         self.f.close()
-        self.closed = True
 
     def copy(self):
         '''return new instance with copy of header'''
         return self.__class__(
             filepath=self.filepath,
-            mode=self.mode.name,
+            mode=self.mode,
             header=self.header.copy(),
             )
 
     def check_read(self):
         '''check if reading from file is ok'''
-        if self.mode != IdfFileMode.rb:
-            raise ValueError("cannot read in '{}' mode".format(self.mode.name))
+        if self.mode != 'rb':
+            raise ValueError("cannot read in '{}' mode".format(self.mode))
         if self.closed:
             raise IOError('cannot read closed Idf file')
         return True
@@ -144,19 +137,13 @@ class IdfFile(object):
             header['dy(row)'] = struct.unpack('f'*header['nrow'],
                 self.f.read(4*header['nrow']))
 
-        # set nodata value
-        self.nodatavals = [header['nodata'], ]
-
         return header
-
-    @property
-    def irec(self):
-        return (10 + (not self.header['ieq']) * 2 + self.header['ieq'] * 2
-            + self.header['itb'] * 2 + 1) * 4
 
     def read(self, masked=False):
         '''read values from Idf file and return data as (masked) array'''
         is_checked = self.check_read()
+
+        # read header if possible
         if not self.header:
             self.header = self.read_header(is_checked=is_checked)
 
@@ -171,14 +158,14 @@ class IdfFile(object):
         values = values.reshape(self.header['nrow'], self.header['ncol'])
 
         if masked:
-            return np.ma.masked_values(values, self.nodatavals[0])
+            return np.ma.masked_values(values, self.header['nodata'])
         else:
             return values
 
     def check_write(self):
         '''check if write to file is ok'''
-        if self.mode != IdfFileMode.wb:
-            raise ValueError("cannot write in '{}' mode".format(self.mode.name))
+        if self.mode != 'wb':
+            raise ValueError("cannot write in '{}' mode".format(self.mode))
         if self.closed:
             raise IOError('cannot write to closed Idf file')
         if not self.header:
@@ -220,11 +207,11 @@ class IdfFile(object):
 
         # write conditional values
         if not self.header['ieq']:
-            self.f.write(struct.pack('f', self.header['dx']))
-            self.f.write(struct.pack('f', self.header['dy']))
+            self.f.write(struct.pack('2f',
+                self.header['dx'], self.header['dy']))
         if self.header['itb']:
-            self.f.write(struct.pack('f', self.header['top']))
-            self.f.write(struct.pack('f', self.header['bot']))
+            self.f.write(struct.pack('2f',
+                self.header['top'], self.header['bot']))
         if self.header['ieq']:
             self.f.write(struct.pack(len(self.header['dx(col)'])*'f',
                 self.header['dx(col)']))
@@ -254,7 +241,7 @@ class IdfFile(object):
         flattened = array.flatten()
         self.f.write(struct.pack('f'*len(flattened), *flattened))
 
-    def is_out(self, row, col):
+    def is_out_of_bounds(self, row, col):
         '''return True if row, col is out of bounds according to header'''
         return ((col < 0) or (col >= self.header['ncol']) or
                (row < 0) or (row >= self.header['nrow']))
@@ -267,7 +254,7 @@ class IdfFile(object):
         for x, y in coords:
             col = int((x - self.header['xmin']) / self.header['dx'])
             row = int((self.header['ymax'] - y) / self.header['dy'])
-            if self.is_out(row, col):
+            if self.is_out_of_bounds(row, col):
                 if bounds_warning:
                     logging.warning((
                         'coordinate pair x, y = {x:.3f}, {y:.3f} out of bounds'
