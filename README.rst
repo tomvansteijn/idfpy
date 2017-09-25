@@ -3,8 +3,8 @@ Idfpy
 A simple module for reading and writing iMOD IDF files. IDF is a simple binary format used by the iMOD_https://www.deltares.nl/nl/software/imod-2 groundwater modelling software.
 
 The format contains:
-1. A header with grid and spatial extent information
-2. An array of floats
+    1. A header with grid and spatial extent information
+    2. An array of floats
 
 The array of floats is translated to a rectangular grid using the ``ncol`` and ``nrow`` fields of the header. The IDF format contains no spatial reference.
 
