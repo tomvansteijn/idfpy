@@ -12,32 +12,26 @@ import struct
 class IdfFileHeaderFormat(object):
     '''Static class containing Idf file header definition'''
     fields = [
-    ('lahey', 'i', 4),
-    ('ncol', 'i', 4),
-    ('nrow', 'i', 4),
-    ('xmin', '7', 4),
-    ('xmax', '7', 4),
-    ('ymin', '7', 4),
-    ('ymax', '7', 4),
-    ('dmin', '7', 4),
-    ('dmax', '7', 4),
-    ('nodata', '7', 4),
-    ('ieq', '?', 1),
-    ('itb', '?', 1),
-    ('mfct', 'x', 2),
+    ('lahey', 'i'),
+    ('ncol', 'i'),
+    ('nrow', 'i'),
+    ('xmin', 'f'),
+    ('xmax', 'f'),
+    ('ymin', 'f'),
+    ('ymax', 'f'),
+    ('dmin', 'f'),
+    ('dmax', 'f'),
+    ('nodata', 'f'),
+    ('ieq', '?'),
+    ('itb', '?'),
+    ('ivf', '?'),
     ]
 
-    names = [n for n, f, l in fields]
-    byteformat = ''.join(f for n, f, l in fields)
-    length = sum(l for n, f, l in fields)
-    multiplication_factors = {
-        1: 1e2,
-        2: 1e-2,
-        3: 1e3,
-        4: 1e-3,
-        5: 1e3,
-        6: 1e-3
-        }
+    pad_bytes = 1
+    # See: iMOD user manual 4.0
+
+    names = [n for n, f in fields]
+    byteformat = ''.join(f for n, f in fields) + pad_bytes*'x'
 
 
 class IdfFileMode(Enum):
@@ -68,7 +62,9 @@ class IdfFile(object):
         if header is not None:
             self.header = header
         elif self.mode == IdfFileMode.rb:
+            self.open()
             self.header = self.read_header()
+            self.close()
         else:
             self.header = {}  # no header, empty dict
 
@@ -119,17 +115,17 @@ class IdfFile(object):
         if not is_checked:
             self.check_read()
 
+        # set file back to first byte
+        self.f.seek(0)
+
         # read values according to headerformat and save in dict
         header_values = struct.unpack(
             IdfFileHeaderFormat.byteformat,
-            self.f.read(IdfFileHeaderFormat.length,
-            ))
+            self.f.read(struct.calcsize(IdfFileHeaderFormat.byteformat)),
+            )
         header = {n: v
             for n, v in zip(IdfFileHeaderFormat.names, header_values)
             }
-
-        # transform multiplication factors
-        header['mfct'] = ord(header['mfct'])
 
         # read conditional values from header
         if not header['ieq']:
@@ -145,7 +141,7 @@ class IdfFile(object):
                 self.f.read(4*header['nrow']))
 
         # set nodata value and end of header position to self
-        self.nodatavals = [self.header['nodata'], ]
+        self.nodatavals = [header['nodata'], ]
         self.endofheader = self.f.tell()
 
         return header
@@ -157,34 +153,14 @@ class IdfFile(object):
             self.header = self.read_header(is_checked=is_checked)
 
         # read values
+        self.f.seek(self.endofheader)
         values = np.fromfile(self.f, np.float32,
-            self.header['nrow'] * self.header['ncol'])
+            self.header['nrow']*self.header['ncol'])
         self.f.seek(self.endofheader)
 
         # reshape values to array shape(nrow, ncol)
         values = values.reshape(self.header['nrow'], self.header['ncol'])
 
-        # apply multiplication factors if present
-        if header['mfct'] > 0:
-            factor = (IdfFileHeaderFormat
-                .multiplication_factors.get(self.header['mfct'], 1)
-                )
-            values *= factor
-
-        if self.header['mfct'] > 4:
-            if self.header['ieq']:
-                cellsize = self.header['dx'] * self.header['dy']
-                if self.header['mfct'] == 5:
-                    values /= cellsize
-                elif self.header['mfct'] == 6:
-                    values *= cellsize
-            else:
-                cellsize = np.meshrid(self.header['dx(col)'],
-                    self.header['dy(col)'])
-                if self.header['mfct'] == 5:
-                    values /= cellsize
-                elif self.header['mfct'] == 6:
-                    values *= cellsize
         if masked:
             return np.ma.masked_values(values, self.nodatavals[0])
         else:
@@ -206,13 +182,12 @@ class IdfFile(object):
             self.check_write()
 
         # write values according to headerformat
-        header_values = [
-            unichr(self.header[k]) if k == 'mfct' else self.header[k]
-            for k in IdfFileHeaderFormat.names
-            ]
-        self.f.write(struct.pack(IdfFileHeaderFormat.byteformat, header_values))
+        header_values = [self.header[k] for k in IdfFileHeaderFormat.names]
+        self.f.write(struct.pack(IdfFileHeaderFormat.byteformat,
+            *header_values,
+            ))
 
-        # write conditional values
+        # write condifdtional values
         if not self.header['ieq']:
             self.f.write(struct.pack('f', self.header['dx']))
             self.f.write(struct.pack('f', self.header['dy']))
@@ -222,20 +197,37 @@ class IdfFile(object):
         if self.header['ieq']:
             raise NotImplementedError('write method ieq=true not implemented')
 
-    def minmax(self, masked=True):
-        '''get minimum and maximum of Idf data'''
-        masked_data = self.read(masked=masked)
-        return masked_data.min(), masked_data.max()
+    def update_header(self, array):
+        '''update header based on Idf data'''
+
+        # update shape
+        nrow, ncol = array.shape
+        self.header['nrow'] = nrow
+        self.header['ncol'] = ncol
+        self.header['xmax'] = self.header['xmin'] + self.header['dx'] * ncol
+        self.header['ymax'] = self.header['ymin'] + self.header['dy'] * nrow
+
+        # update nodata
+        if isinstance(array, np.ma.MaskedArray):
+            self.header['nodata'] = array.fill_value
+
+        # update value range
+        self.header['dmin'] = array.min()
+        self.header['dmax'] = array.max()
 
     def write(self, array):
         '''write to header and values to file'''
         is_checked = self.check_write()
 
-        # calculate dmin, dmax and update header
-        self.header['dmin'], self.header['dmax'] = self.minmax()
+        # update header
+        self.update_header(array)
 
         # write header
         self.write_header(is_checked=is_checked)
+
+        # unmask
+        if isinstance(array, np.ma.MaskedArray):
+            array = array.filled()
 
         # write values
         flattened = array.flatten()
