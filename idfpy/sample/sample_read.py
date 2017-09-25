@@ -6,13 +6,12 @@ import idfpy
 
 def main():
     samplefile = r'bxk1-d-ck.idf'
-    # open Idf file handle -->
     with idfpy.open(samplefile) as src:
         print('opening {f:}'.format(f=samplefile))
         print(src)
-        sample = src.read(masked=True)
         print(len(repr(src))*'-')
-        # <-- close idf file handle
+
+        sample = src.read(masked=True)
 
     print('sample Idf min: {:.2f}'.format(sample.min()))
     print('sample Idf max: {:.2f}'.format(sample.max()))

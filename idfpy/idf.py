@@ -58,13 +58,14 @@ class IdfFile(object):
             raise ValueError(
                 "mode string must be one of 'rb' or 'wb', not {}".format(mode))
 
+        # open filehandle
+        self.open()
+
         # set header or read from file
         if header is not None:
             self.header = header
         elif self.mode == IdfFileMode.rb:
-            self.open()
             self.header = self.read_header()
-            self.close()
         else:
             self.header = {}  # no header, empty dict
 
@@ -75,9 +76,12 @@ class IdfFile(object):
             s=self,
             )
 
+    def __len__(self):
+        if self.header is not None:
+            return self.header['ncol'] * self.header['nrow']
+
     def __enter__(self):
         '''enter with statement block'''
-        self.open()
         return self
 
     def __exit__(self, *args):
@@ -152,11 +156,12 @@ class IdfFile(object):
         if not self.header:
             self.header = self.read_header(is_checked=is_checked)
 
-        # read values
+        # set file to end of header
         self.f.seek(self.endofheader)
+
+        # read values
         values = np.fromfile(self.f, np.float32,
             self.header['nrow']*self.header['ncol'])
-        self.f.seek(self.endofheader)
 
         # reshape values to array shape(nrow, ncol)
         values = values.reshape(self.header['nrow'], self.header['ncol'])
@@ -169,7 +174,7 @@ class IdfFile(object):
     def check_write(self):
         '''check if write to file is ok'''
         if self.mode != IdfFileMode.wb:
-            raise ValueError("cannot read in '{}' mode".format(self.mode.name))
+            raise ValueError("cannot write in '{}' mode".format(self.mode.name))
         if self.closed:
             raise IOError('cannot write to closed Idf file')
         if not self.header:
