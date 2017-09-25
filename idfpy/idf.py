@@ -32,6 +32,7 @@ class IdfFileHeaderFormat(object):
 
     names = [n for n, f in fields]
     byteformat = ''.join(f for n, f in fields) + pad_bytes*'x'
+    length = struct.calcsize(byteformat)
 
 
 class IdfFileMode(Enum):
@@ -49,7 +50,6 @@ class IdfFile(object):
         # set other default properties
         self.closed = True
         self.nodatavals = []
-        self.endofheader = 0
 
         # get mode enum and set as property
         try:
@@ -125,7 +125,7 @@ class IdfFile(object):
         # read values according to headerformat and save in dict
         header_values = struct.unpack(
             IdfFileHeaderFormat.byteformat,
-            self.f.read(struct.calcsize(IdfFileHeaderFormat.byteformat)),
+            self.f.read(IdfFileHeaderFormat.length),
             )
         header = {n: v
             for n, v in zip(IdfFileHeaderFormat.names, header_values)
@@ -139,16 +139,20 @@ class IdfFile(object):
             header['top'], header['bot'] = struct.unpack('2f',
                 self.f.read(4*2))
         if header['ieq']:
-            header['dx(col)'] = struct.unpack('2f',
+            header['dx(col)'] = struct.unpack('f'*header['ncol'],
                 self.f.read(4*header['ncol']))
-            header['dy(row)'] = struct.unpack('2f',
+            header['dy(row)'] = struct.unpack('f'*header['nrow'],
                 self.f.read(4*header['nrow']))
 
-        # set nodata value and end of header position to self
+        # set nodata value
         self.nodatavals = [header['nodata'], ]
-        self.endofheader = self.f.tell()
 
         return header
+
+    @property
+    def irec(self):
+        return (10 + (not self.header['ieq']) * 2 + self.header['ieq'] * 2
+            + self.header['itb'] * 2 + 1) * 4
 
     def read(self, masked=False):
         '''read values from Idf file and return data as (masked) array'''
@@ -156,8 +160,8 @@ class IdfFile(object):
         if not self.header:
             self.header = self.read_header(is_checked=is_checked)
 
-        # set file to end of header
-        self.f.seek(self.endofheader)
+        # set file to start of data
+        self.f.seek(self.irec)
 
         # read values
         values = np.fromfile(self.f, np.float32,
@@ -181,27 +185,6 @@ class IdfFile(object):
             raise ValueError('cannot write when header is empty')
         return True
 
-    def write_header(self, is_checked=False):
-        '''write header to file'''
-        if not is_checked:
-            self.check_write()
-
-        # write values according to headerformat
-        header_values = [self.header[k] for k in IdfFileHeaderFormat.names]
-        self.f.write(struct.pack(IdfFileHeaderFormat.byteformat,
-            *header_values,
-            ))
-
-        # write condifdtional values
-        if not self.header['ieq']:
-            self.f.write(struct.pack('f', self.header['dx']))
-            self.f.write(struct.pack('f', self.header['dy']))
-        if self.header['itb']:
-            self.f.write(struct.pack('f', self.header['top']))
-            self.f.write(struct.pack('f', self.header['bot']))
-        if self.header['ieq']:
-            raise NotImplementedError('write method ieq=true not implemented')
-
     def update_header(self, array):
         '''update header based on Idf data'''
 
@@ -212,13 +195,43 @@ class IdfFile(object):
         self.header['xmax'] = self.header['xmin'] + self.header['dx'] * ncol
         self.header['ymax'] = self.header['ymin'] + self.header['dy'] * nrow
 
-        # update nodata
+        # update nodata value
         if isinstance(array, np.ma.MaskedArray):
             self.header['nodata'] = array.fill_value
 
         # update value range
         self.header['dmin'] = array.min()
         self.header['dmax'] = array.max()
+
+
+    def write_header(self, is_checked=False):
+        '''write header to file'''
+        if not is_checked:
+            self.check_write()
+
+        # set file back to first byte
+        self.f.seek(0)
+
+        # write values according to headerformat
+        header_values = [self.header[k] for k in IdfFileHeaderFormat.names]
+        self.f.write(struct.pack(IdfFileHeaderFormat.byteformat,
+            *header_values,
+            ))
+
+        # write conditional values
+        if not self.header['ieq']:
+            self.f.write(struct.pack('f', self.header['dx']))
+            self.f.write(struct.pack('f', self.header['dy']))
+        if self.header['itb']:
+            self.f.write(struct.pack('f', self.header['top']))
+            self.f.write(struct.pack('f', self.header['bot']))
+        if self.header['ieq']:
+            self.f.write(struct.pack(len(self.header['dx(col)'])*'f',
+                self.header['dx(col)']))
+            self.f.write(struct.pack(len(self.header['dy(row)'])*'f',
+                self.header['dy(row)']))
+        if self.header['ivf']:
+            raise NotImplementedError('write method ivf=true not implemented')
 
     def write(self, array):
         '''write to header and values to file'''
@@ -229,6 +242,9 @@ class IdfFile(object):
 
         # write header
         self.write_header(is_checked=is_checked)
+
+        # set file to start of data
+        self.f.seek(self.irec)
 
         # unmask
         if isinstance(array, np.ma.MaskedArray):
