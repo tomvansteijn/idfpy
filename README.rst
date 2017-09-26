@@ -4,8 +4,8 @@ A simple module for reading and writing iMOD IDF files. IDF is a simple binary f
 
 The format contains:
 
-    #. A header with grid and spatial extent information.
-    #. An array of floats.
+#. A header with grid and spatial extent information.
+#. An array of floats.
 
 The array of floats is translated to a rectangular grid using the ``ncol`` and ``nrow`` fields of the header. The IDF format contains no spatial reference. It is projection unaware.
 When writing IDF files with ``idfpy``, the fields ``dmin``, ``dmax``, ``xmax`` and ``ymax`` in the IDF header are updated using the actual values of the IDF data array.
