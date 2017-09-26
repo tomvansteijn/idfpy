@@ -6,32 +6,38 @@ The format contains:
     1. A header with grid and spatial extent information
     2. An array of floats
 
-The array of floats is translated to a rectangular grid using the ``ncol`` and ``nrow`` fields of the header. The IDF format contains no spatial reference.
+The array of floats is translated to a rectangular grid using the ``ncol`` and ``nrow`` fields of the header. The IDF format contains no spatial reference, it is projection unaware.
 
 Installation
 ------------
 This package is not yet published. In the meanwhile, use pip:
-
+::
     pip install git+https://github.com/tomvansteijn/idfpy.git
+    python setup.py install
+::
+Installation requires Python 3+ and Numpy.
 
 Usage
 -----
 
-Example::
+Example:
+::
     import idfpy
-    with idfpy.open('kh.idf') as src:
-        kh = src.read(masked=True)
+    with idfpy.open('bxk1-d-ck.idf') as src:
+        bxk1d = src.read(masked=True)
 
-    print('kh mean: {:.1f}'.format(kh.mean()))
-    print('kh coverage: {:.1f}%'.format(
-        kh.mask.sum() / kh.mask.count * 1e2
+    print('bxk1d mean: {:.1f}'.format(bxk1d.mean()))
+    print('bxk1d coverage: {:.1f}%'.format(
+        (1 - bxk1d.mask.sum() / bxk1d.mask.size) * 1e2
         ))
+::
 
-Files can also be sampled using a sequence of X, Y coordinates::
-
+Files can also be sampled using a sequence of X, Y coordinates:
+::
     import idfpy
-    coords = [(250_000., 400_000.), ]
-    with idfpy.open('kh.idf') as src:
+    coords = [(255_872., 485_430.), ]
+    with idfpy.open('bxk1-d-ck.idf') as src:
         values = [v[0] for v in src.sample(coords)]
 
     print(values)
+::
