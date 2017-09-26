@@ -1,6 +1,6 @@
 Idfpy
 =====
-A simple module for reading and writing iMOD IDF files. IDF is a simple binary format used by the iMOD_https://www.deltares.nl/nl/software/imod-2 groundwater modelling software.
+A simple module for reading and writing iMOD IDF files. IDF is a simple binary format used by the `iMOD <https://www.deltares.nl/nl/software/imod-2>`_ groundwater modelling software.
 
 The format contains:
     1. A header with grid and spatial extent information
@@ -17,7 +17,7 @@ This package is not yet published. In the meanwhile, use pip:
 Usage
 -----
 
-Example:
+Example::
     import idfpy
     with idfpy.open('kh.idf') as src:
         kh = src.read(masked=True)
@@ -27,7 +27,7 @@ Example:
         kh.mask.sum() / kh.mask.count * 1e2
         ))
 
-Files can also be sampled using a sequence of X, Y coordinates:
+Files can also be sampled using a sequence of X, Y coordinates::
 
     import idfpy
     coords = [(250_000., 400_000.), ]
