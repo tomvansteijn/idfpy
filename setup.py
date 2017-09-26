@@ -24,15 +24,15 @@ setup(
     # https://packaging.python.org/en/latest/single_source_version.html
     version='0.1.dev1',
 
-    description='read and write iMOD IDF files',
+    description='Read and write iMOD IDF files',
     long_description=long_description,
 
     # The project's main homepage.
-    url='https://github.com/pypa/sampleproject',
+    # url='https://github.com/pypa/sampleproject',
 
     # Author details
-    author='The Python Packaging Authority',
-    author_email='pypa-dev@googlegroups.com',
+    author='Tom van Steijn',
+    author_email='tom.van.steijn@rhdhv.com',
 
     # Choose your license
     license='MIT',
@@ -46,8 +46,7 @@ setup(
         'Development Status :: 3 - Alpha',
 
         # Indicate who your project is intended for
-        'Intended Audience :: Developers',
-        'Topic :: Software Development :: Build Tools',
+        'Topic :: Groundwater modelling :: Hydrology',
 
         # Pick your license as you wish (should match "license" above)
         'License :: OSI Approved :: MIT License',
@@ -58,11 +57,11 @@ setup(
     ],
 
     # What does your project relate to?
-    keywords='sample setuptools development',
+    keywords='geohydrology modelling binary',
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
-    packages=find_packages(exclude=['tests',]),
+    packages=['idfpy', ],
 
     # Alternatively, if you want to distribute just a my_module.py, uncomment
     # this:
@@ -72,7 +71,7 @@ setup(
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['numpy',],
+    install_requires=['numpy', ],
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). You can install these using the following syntax,
