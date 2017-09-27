@@ -46,6 +46,25 @@ class TestIdfFile(object):
         with idfpy.open(sourcefile) as src:
             src.irec == 52
 
+    def test_geotransform(self, sourcefile):
+        expected_geotransform = (
+            251500.,
+            100.,
+            0.,
+            489200.,
+            0.,
+            -100.,
+            )
+
+        with idfpy.open(sourcefile) as src:
+            for value, expected_value in \
+            zip(src.geotransform, expected_geotransform):
+                if isinstance(value, float):
+                    assert np.isclose(value, expected_value)
+                else:
+                    assert value == expected_value
+
+
     def test_copy(self, sourcefile):
         with idfpy.open(sourcefile) as src:
             cpy = src.copy()
@@ -70,19 +89,19 @@ class TestIdfFile(object):
         expected_header = {
             'dmax': 9.759389877319336,
             'dmin': 0.041515398770570755,
-            'dx': 100.0,
-            'dy': 100.0,
+            'dx': 100.,
+            'dy': 100.,
             'ieq': False,
             'itb': False,
             'ivf': False,
             'lahey': 1271,
             'ncol': 88,
-            'nodata': -9999.0,
+            'nodata': -9999.,
             'nrow': 66,
-            'xmax': 260300.0,
-            'xmin': 251500.0,
-            'ymax': 489200.0,
-            'ymin': 482600.0,
+            'xmax': 260300.,
+            'xmin': 251500.,
+            'ymax': 489200.,
+            'ymin': 482600.,
             }
         with idfpy.open(sourcefile) as src:
             header = src.header

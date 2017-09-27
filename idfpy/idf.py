@@ -83,6 +83,19 @@ class IdfFile(object):
         return (10 + (not self.header['ieq']) * 2 + self.header['ieq'] * 2
             + self.header['itb'] * 2 + 1) * 4
 
+    @property
+    def geotransform(self):
+        '''GDAL style geotransform for use with GIS packages'''
+        if self.header is not None:
+            return (
+                self.header['xmin'],
+                self.header['dx'],
+                0.,
+                self.header['ymax'],
+                0.,
+                -self.header['dy'],
+                )
+
     def open(self, mode='rb'):
         '''open file handle'''
         self.f = open(self.filepath, mode)
