@@ -2,20 +2,15 @@
 # -*- coding: utf-8 -*-
 # Tom van Steijn, Royal HaskoningDHV
 
-import idfpy
-
-from matplotlib import pyplot as plt
-
-from rasterio import Affine
-from rasterio.crs import CRS
-from rasterio.fill import fillnodata
-from rasterio.warp import reproject, Resampling
-from rasterio.windows import from_bounds
-
-import numpy as np
-
-
 def example_reproject():
+    import idfpy
+
+    from matplotlib import pyplot as plt
+    from rasterio import Affine
+    from rasterio.crs import CRS
+    from rasterio.warp import reproject, Resampling
+    import numpy as np
+
     with idfpy.open('bxk1-d-ck.idf') as src:
         a = src.read(masked=True)
         nr, nc = src.header['nrow'], src.header['ncol']
@@ -26,13 +21,13 @@ def example_reproject():
     dst_transform = Affine.translation(src_transform.c, src_transform.f)
     dst_transform *= Affine.scale(dx / 10., -dy / 10.)
 
-    # define coordinate system (RD New)
+    # define coordinate system (here RD New)
     src_crs = CRS.from_epsg(28992)
 
     # initialize new data array
     b = np.empty((10*nr, 10*nc))
 
-    # reproject using gdal warp
+    # reproject using Rasterio
     reproject(
         source=a,
         destination=b,

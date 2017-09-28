@@ -5,6 +5,7 @@
 
 def example_1():
     import idfpy
+
     with idfpy.open('bxk1-d-ck.idf') as src:
         bxk1d = src.read(masked=True)
 
