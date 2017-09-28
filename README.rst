@@ -86,6 +86,7 @@ IDF arrays can also be shifted, resampled or reprojected using `Rasterio <https:
     plt.show()
 ::
 See:
+
 .. image:: https://s26.postimg.org/bspvp7sbt/readme_example_reproject.png
     :width: 471
     :height: 758
