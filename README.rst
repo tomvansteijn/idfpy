@@ -26,6 +26,7 @@ Usage
 Example:
 ::
     import idfpy
+
     with idfpy.open('bxk1-d-ck.idf') as src:
         bxk1d = src.read(masked=True)
 
@@ -38,6 +39,7 @@ Example:
 Files can also be sampled using a sequence of X, Y coordinates:
 ::
     import idfpy
+
     coords = [(255_872., 485_430.), ]
     with idfpy.open('bxk1-d-ck.idf') as src:
         values = [v[0] for v in src.sample(coords)]
@@ -47,6 +49,14 @@ Files can also be sampled using a sequence of X, Y coordinates:
 
 IDF arrays can also be shifted, resampled or reprojected using `Rasterio <https://github.com/mapbox/rasterio>`_:
 ::
+    import idfpy
+
+    from matplotlib import pyplot as plt
+    from rasterio import Affine
+    from rasterio.crs import CRS
+    from rasterio.warp import reproject, Resampling
+    import numpy as np
+
     with idfpy.open('bxk1-d-ck.idf') as src:
         a = src.read(masked=True)
         nr, nc = src.header['nrow'], src.header['ncol']
