@@ -8,7 +8,7 @@ The format contains:
 #. An array of floats.
 
 The array of floats is translated to a rectangular grid using the ``ncol`` and ``nrow`` fields of the header. The IDF format contains no spatial reference. It is projection unaware.
-When writing IDF files with ``idfpy``, the fields ``dmin``, ``dmax``, ``xmax`` and ``ymax`` in the IDF header are updated using the actual values of the IDF data array.
+When writing IDF files with Idfpy, the fields ``dmin``, ``dmax``, ``xmax`` and ``ymax`` in the IDF header are updated using the actual values of the IDF data array.
 
 Installation
 ------------
@@ -45,7 +45,7 @@ Files can also be sampled using a sequence of X, Y coordinates:
     print(values)
 ::
 
-IDF arrays can be shifted, resampled or reprojected using `Rasterio <https://github.com/mapbox/rasterio>`_:
+IDF arrays can also be shifted, resampled or reprojected using `Rasterio <https://github.com/mapbox/rasterio>`_:
 ::
     with idfpy.open('bxk1-d-ck.idf') as src:
         a = src.read(masked=True)
@@ -57,13 +57,13 @@ IDF arrays can be shifted, resampled or reprojected using `Rasterio <https://git
     dst_transform = Affine.translation(src_transform.c, src_transform.f)
     dst_transform *= Affine.scale(dx / 10., -dy / 10.)
 
-    # define coordinate system (RD New)
+    # define coordinate system (here RD New)
     src_crs = CRS.from_epsg(28992)
 
     # initialize new data array
     b = np.empty((10*nr, 10*nc))
 
-    # reproject using gdal warp
+    # reproject using Rasterio
     reproject(
         source=a,
         destination=b,
@@ -85,3 +85,5 @@ IDF arrays can be shifted, resampled or reprojected using `Rasterio <https://git
     axes[1].set_title('bxk1 resampled')
     plt.show()
 ::
+See:
+.. image:: https://postimg.org/image/wcupnp82t/
