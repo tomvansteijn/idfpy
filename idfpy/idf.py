@@ -51,6 +51,10 @@ class IdfFile(object):
         else:
             self.header = {}  # no header, empty dict
 
+        # set data fields to None
+        self._data = None
+        self._masked = None
+
     def __repr__(self):
         return (
             '{s.__class__.__name__:}(filepath={s.filepath:}, '
@@ -96,6 +100,18 @@ class IdfFile(object):
                 -self.header['dy'],
                 )
 
+    @property
+    def data(self):
+        if self._data is None:
+            self._data = self.read()
+        return self._data
+
+    @property
+    def masked(self):
+        if self._masked is None:
+            self._masked = self.read(masked=True)
+        return self._masked
+
     def open(self, mode='rb'):
         '''open file handle'''
         self.f = open(self.filepath, mode)
@@ -104,12 +120,12 @@ class IdfFile(object):
         '''close file handle'''
         self.f.close()
 
-    def copy(self):
+    def copy(self, filepath=None, mode=None, header=None):
         '''return new instance with copy of header'''
         return self.__class__(
-            filepath=self.filepath,
-            mode=self.mode,
-            header=self.header.copy(),
+            filepath=filepath or self.filepath,
+            mode=mode or self.mode,
+            header=header or self.header.copy(),
             )
 
     def check_read(self):
