@@ -85,6 +85,7 @@ IDF arrays can also be shifted, resampled or reprojected using `Rasterio <https:
     axes[1].set_title('bxk1 resampled')
     plt.show()
 ::
+
 See:
 
 .. image:: https://s26.postimg.org/bspvp7sbt/readme_example_reproject.png
