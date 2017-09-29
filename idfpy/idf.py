@@ -53,7 +53,7 @@ class IdfFile(object):
 
         # set data fields to None
         self._data = None
-        self._masked = None
+        self._masked_data = None
 
     def __repr__(self):
         return (
@@ -107,9 +107,9 @@ class IdfFile(object):
         return self._data
 
     @property
-    def masked(self):
-        if self._masked is None:
-            self._masked = self.read(masked=True)
+    def masked_data(self):
+        if self._masked_data is None:
+            self._masked_data = self.read(masked=True)
         return self._masked
 
     def open(self, mode='rb'):
