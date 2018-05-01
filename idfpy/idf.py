@@ -110,7 +110,7 @@ class IdfFile(object):
     def masked_data(self):
         if self._masked_data is None:
             self._masked_data = self.read(masked=True)
-        return self._masked
+        return self._masked_data
 
     def open(self, mode='rb'):
         """open file handle"""
