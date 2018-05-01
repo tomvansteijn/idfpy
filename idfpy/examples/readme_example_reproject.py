@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 # Tom van Steijn, Royal HaskoningDHV
 
+
 def example_reproject():
     import idfpy
 
@@ -48,7 +49,6 @@ def example_reproject():
     axes[1].imshow(b.filled(np.nan))
     axes[1].set_title('bxk1 resampled')
     plt.show()
-
 
 
 if __name__ == '__main__':

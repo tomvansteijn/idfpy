@@ -12,5 +12,6 @@ def example_2():
 
     print(values)
 
+
 if __name__ == '__main__':
     example_2()

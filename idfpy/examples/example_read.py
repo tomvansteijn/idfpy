@@ -4,6 +4,7 @@
 
 import idfpy
 
+
 def main():
     samplefile = r'bxk1-d-ck.idf'
     with idfpy.open(samplefile) as src:
@@ -19,6 +20,7 @@ def main():
     print('sample Idf coverage: {:.0f}%'.format(
        (1 - sample.mask.sum() / sample.mask.size) * 1e2
         ))
+
 
 if __name__ == '__main__':
     main()

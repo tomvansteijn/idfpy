@@ -64,7 +64,6 @@ class TestIdfFile(object):
                 else:
                     assert value == expected_value
 
-
     def test_copy(self, sourcefile):
         with idfpy.open(sourcefile) as src:
             cpy = src.copy()

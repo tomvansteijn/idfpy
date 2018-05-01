@@ -14,5 +14,6 @@ def example_1():
         (1 - bxk1d.mask.sum() / bxk1d.mask.size) * 1e2
         ))
 
+
 if __name__ == '__main__':
     example_1()
