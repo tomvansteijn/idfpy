@@ -98,6 +98,6 @@ IDF arrays can also be shifted, resampled or reprojected using `Rasterio <https:
 
 Result:
 
-.. image:: https://s26.postimg.org/bspvp7sbt/readme_example_reproject.png
+.. image:: https://raw.githubusercontent.com/tomvansteijn/idfpy/master/idfpy/examples/readme_example_reproject.png
     :width: 471
     :height: 758
