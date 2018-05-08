@@ -102,3 +102,11 @@ ENV/
 
 # PyCharm
 .idea/
+
+# Export files
+*.tif
+*.tiff
+*.geotiff
+*.prj
+*.xml
+

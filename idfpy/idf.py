@@ -3,6 +3,9 @@
 # Tom van Steijn, Royal HaskoningDHV
 
 import numpy as np
+import rasterio
+from rasterio import Affine
+from rasterio.crs import CRS
 
 import logging
 import struct
@@ -165,7 +168,6 @@ class IdfFile(object):
                 self.f.read(4*header['ncol']))
             header['dy(row)'] = struct.unpack('f'*header['nrow'],
                 self.f.read(4*header['nrow']))
-
         return header
 
     def read(self, masked=False):
@@ -284,9 +286,34 @@ class IdfFile(object):
             row = int((self.header['ymax'] - y) / self.header['dy'])
             if self.is_out_of_bounds(row, col):
                 if bounds_warning:
-                    logging.warning((
+                    logging.warning(
                         'coordinate pair x, y = {x:.3f}, {y:.3f} out of bounds'
-                        .format(x=x, y=y)))
+                        .format(x=x, y=y))
                 yield (np.nan,)
             else:
                 yield (values[row, col],)
+
+    def to_raster(self, fp=None, **profile):
+        """export Idf to a geotiff"""
+        self.check_read()
+
+        if fp is None:
+            fp = self.filepath.replace('.idf', '.geotiff')
+            logging.warning('no filepath was given, exported to {fp}'.format(fp=fp))
+
+        # set default profile
+        if not profile:
+            profile = {
+                'width': self.header['ncol'],
+                'height': self.header['nrow'],
+                'transform': Affine.from_gdal(*self.geotransform),
+                'nodata': self.header['nodata'],
+                'count': 1,
+                'dtype': rasterio.float64,
+                'driver': 'AAIGrid',
+                'crs': CRS.from_epsg(28992),
+            }
+            logging.warning('no profile was given, default profile is used {profile}'.format(profile=profile))
+
+        with rasterio.open(fp, 'w', **profile) as dst:
+            dst.write(self.masked_data.astype(profile['dtype']), 1)
