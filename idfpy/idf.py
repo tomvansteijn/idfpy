@@ -293,7 +293,7 @@ class IdfFile(object):
             else:
                 yield (values[row, col],)
 
-    def to_raster(self, fp=None, **profile):
+    def to_raster(self, fp=None, epsg=28992, driver='AAIGrid'):
         """export Idf to a geotiff"""
         self.check_read()
 
@@ -301,19 +301,17 @@ class IdfFile(object):
             fp = self.filepath.replace('.idf', '.geotiff')
             logging.warning('no filepath was given, exported to {fp}'.format(fp=fp))
 
-        # set default profile
-        if not profile:
-            profile = {
-                'width': self.header['ncol'],
-                'height': self.header['nrow'],
-                'transform': Affine.from_gdal(*self.geotransform),
-                'nodata': self.header['nodata'],
-                'count': 1,
-                'dtype': rasterio.float64,
-                'driver': 'AAIGrid',
-                'crs': CRS.from_epsg(28992),
-            }
-            logging.warning('no profile was given, default profile is used {profile}'.format(profile=profile))
+        # set profile
+        profile = {
+            'width': self.header['ncol'],
+            'height': self.header['nrow'],
+            'transform': Affine.from_gdal(*self.geotransform),
+            'nodata': self.header['nodata'],
+            'count': 1,
+            'dtype': rasterio.float64,
+            'driver': driver,
+            'crs': CRS.from_epsg(epsg),
+        }
 
         with rasterio.open(fp, 'w', **profile) as dst:
             dst.write(self.masked_data.astype(profile['dtype']), 1)
