@@ -3,9 +3,6 @@
 # Tom van Steijn, Royal HaskoningDHV
 
 import numpy as np
-import rasterio
-from rasterio import Affine
-from rasterio.crs import CRS
 
 import logging
 import struct
@@ -292,26 +289,3 @@ class IdfFile(object):
                 yield (np.nan,)
             else:
                 yield (values[row, col],)
-
-    def to_raster(self, fp=None, epsg=28992, driver='AAIGrid'):
-        """export Idf to a geotiff"""
-        self.check_read()
-
-        if fp is None:
-            fp = self.filepath.replace('.idf', '.geotiff')
-            logging.warning('no filepath was given, exported to {fp}'.format(fp=fp))
-
-        # set profile
-        profile = {
-            'width': self.header['ncol'],
-            'height': self.header['nrow'],
-            'transform': Affine.from_gdal(*self.geotransform),
-            'nodata': self.header['nodata'],
-            'count': 1,
-            'dtype': rasterio.float64,
-            'driver': driver,
-            'crs': CRS.from_epsg(epsg),
-        }
-
-        with rasterio.open(fp, 'w', **profile) as dst:
-            dst.write(self.masked_data.astype(profile['dtype']), 1)
