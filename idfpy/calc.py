@@ -24,6 +24,11 @@ def nanmax(*ms, axis=-1):
     return np.nanmax(np.stack(ms, axis=axis), axis=axis)
 
 
+def nansum(*ms, axis=-1):
+    '''take the average over a sequence of arrays'''
+    return np.nansum(np.stack(ms, axis=axis), axis=axis)
+
+
 def nanmean(*ms, axis=-1):
     '''take the average over a sequence of arrays'''
     return np.nanmean(np.stack(ms, axis=axis), axis=axis)

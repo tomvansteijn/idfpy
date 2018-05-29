@@ -10,7 +10,7 @@ import click
 
 @click.command()
 @click.argument('pattern', type=str)
-@click.argument('method', type=click.Choice(['min', 'max', 'mean']))
+@click.argument('method', type=click.Choice(['min', 'max', 'sum', 'mean']))
 @click.argument('outfile', type=str)
 @click.argument('path', type=str, default='.')
 def stack(pattern, method, outfile, path):
@@ -18,12 +18,13 @@ def stack(pattern, method, outfile, path):
     p = Path(path)
     files = [f for f in p.glob(pattern) if not f == outfile]
     if not len(files):
-        print('no match for \'{p:}\''.format(p=pattern))
+        raise ValueError('no match for \'{p:}\''.format(p=pattern))
     header = io.read_header(files[0])
     arrays = (io.read_array(f) for f in files)
     agg = {
         'min': calc.nanmin,
         'max': calc.nanmax,
+        'sum': calc.nansum,
         'mean': calc.nanmean,
         }.get(method)
     io.write_array(outfile, agg(*arrays), header)
