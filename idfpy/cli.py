@@ -12,15 +12,14 @@ import click
 @click.argument('pattern', type=str)
 @click.argument('method', type=click.Choice(['min', 'max', 'sum', 'mean']))
 @click.argument('outfile', type=str)
-@click.argument('path', type=str, default='.')
-def stack(pattern, method, outfile, path):
+def stack(pattern, method, outfile, path='.'):
     '''stack and aggregate idf's using min, max or mean'''
     p = Path(path)
-    files = [f for f in p.glob(pattern) if not f == outfile]
-    if not len(files):
+    idffiles = [f for f in p.glob(pattern) if not f == outfile]
+    if not len(idffiles):
         raise ValueError('no match for \'{p:}\''.format(p=pattern))
-    header = io.read_header(files[0])
-    arrays = (io.read_array(f) for f in files)
+    header = io.read_header(idffiles[0])
+    arrays = (io.read_array(f) for f in idffiles)
     agg = {
         'min': calc.nanmin,
         'max': calc.nanmax,
@@ -30,4 +29,14 @@ def stack(pattern, method, outfile, path):
     io.write_array(outfile, agg(*arrays), header)
 
 
+@click.command()
+@click.argument('pattern', type=str)
+@click.option('--epsg', type=int, default=28992)
+def idf2tif(pattern, epsg, path='.'):
+    '''stack and aggregate idf's using min, max or mean'''
+    from idfpy import idfraster
 
+    p = Path(path)    
+    for idffile in p.glob(pattern):
+        with idfraster.IdfRaster(str(idffile)) as src:
+            src.to_raster(str(idffile.with_suffix('.tif')), epsg=epsg)

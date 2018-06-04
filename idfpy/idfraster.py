@@ -2,17 +2,19 @@
 # -*- coding: utf-8 -*-
 # Tom van Steijn, Royal HaskoningDHV
 
-from idf import IdfFile
+from idfpy import idf
 
 from rasterio import Affine
 from rasterio.crs import CRS
+import rasterio
+
+import logging
 
 
-class IdfRaster(IdfFile):
+class IdfRaster(idf.IdfFile):
     def to_raster(self, fp=None, epsg=28992, driver='AAIGrid'):
         """export Idf to a geotiff"""
         self.check_read()
-        self.update_header()
 
         if fp is None:
             fp = self.filepath.replace('.idf', '.geotiff')
