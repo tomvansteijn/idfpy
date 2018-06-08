@@ -20,13 +20,7 @@ def stack(pattern, method, outfile, path='.'):
         raise ValueError('no match for \'{p:}\''.format(p=pattern))
     header = io.read_header(idffiles[0])
     arrays = (io.read_array(f) for f in idffiles)
-    agg = {
-        'min': calc.nanmin,
-        'max': calc.nanmax,
-        'sum': calc.nansum,
-        'mean': calc.nanmean,
-        }.get(method)
-    io.write_array(outfile, agg(*arrays), header)
+    io.write_array(outfile, calc.agg(*arrays, method=method), header)
 
 
 @click.command()

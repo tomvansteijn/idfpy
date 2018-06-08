@@ -5,9 +5,9 @@
 from idfpy import idf
 
 
-def read_array(idffile):
+def read_array(idffile, masked=True):
     with idf.IdfFile(idffile) as src:
-        return src.read(masked=True)
+        return src.read(masked=masked)
 
 
 def read_header(idffile):

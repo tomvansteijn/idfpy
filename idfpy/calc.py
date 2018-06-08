@@ -14,21 +14,12 @@ def merge(m1, m2):
     return merged
 
 
-def nanmin(*ms, axis=-1):
-    '''take the average over a sequence of arrays'''
-    return np.nanmin(np.stack(ms, axis=axis), axis=axis)
-
-
-def nanmax(*ms, axis=-1):
-    '''take the average over a sequence of arrays'''
-    return np.nanmax(np.stack(ms, axis=axis), axis=axis)
-
-
-def nansum(*ms, axis=-1):
-    '''take the average over a sequence of arrays'''
-    return np.nansum(np.stack(ms, axis=axis), axis=axis)
-
-
-def nanmean(*ms, axis=-1):
-    '''take the average over a sequence of arrays'''
-    return np.nanmean(np.stack(ms, axis=axis), axis=axis)
+def agg(*ms, method='sum', axis=-1):
+    func = {
+        'min': np.ma.min,
+        'max': np.ma.max,
+        'sum': np.ma.sum,
+        'mean': np.ma.mean,
+        }.get(method)
+    result = func(np.stack(ms, axis=axis), axis=axis)
+    return np.ma.masked_invalid(result)
