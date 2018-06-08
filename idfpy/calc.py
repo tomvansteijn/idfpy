@@ -15,11 +15,11 @@ def merge(m1, m2):
 
 
 def agg(*ms, method='sum', axis=-1):
-    func = {
+    m = np.ma.dstack(ms)
+    r = {
         'min': np.ma.min,
         'max': np.ma.max,
         'sum': np.ma.sum,
         'mean': np.ma.mean,
-        }.get(method)
-    result = func(np.stack(ms, axis=axis), axis=axis)
-    return np.ma.masked_invalid(result)
+        }[method](m, axis=axis)
+    return r
