@@ -262,6 +262,7 @@ class IdfFile(object):
 
         # unmask
         if isinstance(array, np.ma.MaskedArray):
+            array.fill_value = self.header['nodata']
             array = array.filled()
 
         # write values
