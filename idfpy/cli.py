@@ -8,10 +8,11 @@ from idfpy import io
 from pathlib import Path
 import click
 
+
 @click.command()
-@click.argument('pattern', type=str)
-@click.argument('method', type=click.Choice(['min', 'max', 'sum', 'mean']))
-@click.argument('outfile', type=str)
+@click.argument('pattern', type=str, help='Location of the idffiles')
+@click.argument('method', type=click.Choice(['min', 'max', 'sum', 'mean']), help='Method for aggregation')
+@click.argument('outfile', type=str, help='Location of the output file')
 def stack(pattern, method, outfile, path='.'):
     '''stack and aggregate idf's using min, max or mean'''
     p = Path(path)
@@ -24,8 +25,8 @@ def stack(pattern, method, outfile, path='.'):
 
 
 @click.command()
-@click.argument('pattern', type=str)
-@click.option('--epsg', type=int, default=28992)
+@click.argument('pattern', type=str, help='Location of the idffiles')
+@click.option('--epsg', type=int, default=28992, help='The coordinate reference system')
 def idf2tif(pattern, epsg, path='.'):
     '''stack and aggregate idf's using min, max or mean'''
     from idfpy import idfraster
