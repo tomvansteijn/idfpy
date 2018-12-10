@@ -102,6 +102,7 @@ setup(
         'console_scripts': [
         'idfstack=idfpy.cli:stack',
         'idf2tif=idfpy.cli:idf2tif',
+        'idf2asc=idfpy.cli:idf2asc',
         ],
     },
 )
